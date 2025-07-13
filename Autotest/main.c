@@ -2,11 +2,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-/*Этот код имитирует работу с GPIO на микроконтроллерах STM32, используя структуры
- * для представления регистров.*/
-
-// Определение структуры, описывающей регистры GPIO (общий порт ввода/вывода)
-// для микроконтроллеров STM32
 typedef struct {
     uint32_t MODER; // Регистр режима (input/output/alternate/analog)
     uint32_t OTYPER; // Регистр типа выхода (push-pull/open-drain)
@@ -20,14 +15,8 @@ typedef struct {
     uint32_t AFR[2]; // Массив регистров альтернативных функций (AFR[0] и AFR[1])
 } GPIO_TypeDef;
 
-// =============================================
-// Создание тестовых структур для имитации GPIO портов
-// Все поля инициализируются нулями благодаря {0,}
 GPIO_TypeDef a = {0,}, b = {0,}, c = {0,}, d = {0,}, e = {0,};
 
-// =============================================
-// Определение макросов для адресов GPIO портов
-// Макросы преобразуют адреса структур в целочисленные значения (size_t)
 // ВОПРОС: тут не define должны быть, а присваивания?
 // Адреса передаются как целые числа
 #define GPIOA ((size_t) & a) // Адрес структуры 'a' как GPIO порт A
@@ -52,33 +41,38 @@ uint16_t set_bit(size_t base, uint16_t bit);
 
 int main()
 {
-    size_t port = GPIOA; // Выбор порта GPIOA для теста
-    uint16_t bit = 10; // Бит 10 будет установлен в ODR
+    size_t port = GPIOC;
+    uint16_t bit = 0;
 
-    /*Если бит - это маска, то переводим*/
+    // Защита от неверных битов
+    if (bit > 15)
+    {
+        printf("Error: invalid bit (%u > 15)\n", bit);
+        return 0;
+    }
 
-    uint16_t result = set_bit(port, bit); // Вызов функции установки бита
+    uint16_t result = set_bit(port, bit);
 
-    // Вывод результата и значения ODR (в шестнадцатеричном формате)
-    printf("Result: %u, ODR: 0x%08X\n", result, ((GPIO_TypeDef*)port)->ODR);
-
+    if (result != 0 || bit == 0)
+    {
+        printf("Result: %u, ODR: 0x%08X\n", result, ((GPIO_TypeDef*)port)->ODR);
+    }
+    else
+    {
+        printf("Error: invalid port 0x%08zX\n", port);
+    }
     return 0;
 }
 
-// Начало решения
 uint16_t set_bit(size_t base, uint16_t bit)
 {
-    // Преобразуем номер бита в маску
     uint16_t bit_mask = (1 << bit);
 
-    // Инициализация указателя на порт как NULL
     GPIO_TypeDef* port = 0;
 
-// Проверка, определён ли макрос GPIOA, и если да — сравнение base с его значением
 #if defined GPIOA
     if (base == GPIOA) port = (GPIO_TypeDef*)base;
 #endif
-// Аналогично для GPIOB, GPIOC, GPIOD
 #if defined GPIOB
     if (base == GPIOB) port = (GPIO_TypeDef*)base;
 #endif
@@ -89,7 +83,6 @@ uint16_t set_bit(size_t base, uint16_t bit)
     if (base == GPIOD) port = (GPIO_TypeDef*)base;
 #endif
 
-    // Если порт найден, устанавливаем бит в ODR, иначе обнуляем bit
     if (port)
     {
         port->ODR |= bit_mask;
@@ -100,4 +93,3 @@ uint16_t set_bit(size_t base, uint16_t bit)
     }
     return bit;
 }
-// Конец решения
